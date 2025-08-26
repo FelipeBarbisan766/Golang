@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"os"
+	"strings"
 )
 
 type Org struct {
@@ -18,8 +19,9 @@ type Org struct {
 	NumberEmployees string
 }
 type CSVManager struct {
-	filePath string 
+	filePath string
 }
+
 func NewCSVManager() *CSVManager {
 	return &CSVManager{
 		filePath: "utils/organizations-100000.csv",
@@ -41,7 +43,7 @@ func (c *CSVManager) ReadAll() ([]Org, error) {
 
 	var orgs []Org
 	for i, cols := range lines {
-		if i == 0 { // Ignorar cabeçalho
+		if i == 0 {
 			continue
 		}
 		orgs = append(orgs, Org{
@@ -66,7 +68,7 @@ func (c *CSVManager) ReadByLine(process func(Org)) error {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
-	// Ignora cabeçalho
+
 	_, _ = reader.Read()
 
 	for {
@@ -113,30 +115,29 @@ func (c *CSVManager) Write(org Org) error {
 
 	return writer.Write(record)
 }
-func (c *CSVManager) SearchByField(field, value string) ([]Org, error) {
+func (c *CSVManager) SearchByField(value string) ([]Org, error) {
 	orgs, err := c.ReadAll()
 	if err != nil {
 		return nil, err
 	}
 
 	var result []Org
+	value = strings.ToLower(value)
+
 	for _, o := range orgs {
-		switch field {
-		case "Index":
-			if o.Index == value {
-				result = append(result, o)
-			}
-		case "Name":
-			if o.Name == value {
-				result = append(result, o)
-			}
-		case "Country":
-			if o.Country == value {
-				result = append(result, o)
-			}
-		default:
-			return nil, errors.New("campo inválido")
+		if strings.Contains(strings.ToLower(o.Index), value) ||
+			strings.Contains(strings.ToLower(o.Name), value) ||
+			strings.Contains(strings.ToLower(o.Description), value) ||
+			strings.Contains(strings.ToLower(o.Website), value) ||
+			strings.Contains(strings.ToLower(o.Industry), value) ||
+			strings.Contains(strings.ToLower(o.Country), value) {
+			result = append(result, o)
 		}
 	}
+
+	if len(result) == 0 {
+		return nil, errors.New("nenhum resultado encontrado")
+	}
+
 	return result, nil
 }
